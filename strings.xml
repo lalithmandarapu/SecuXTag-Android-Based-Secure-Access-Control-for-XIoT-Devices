@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SecuXTag</string>
+    <string name="encrypt_sample_text">Encrypt Sample Text</string>
+</resources>
