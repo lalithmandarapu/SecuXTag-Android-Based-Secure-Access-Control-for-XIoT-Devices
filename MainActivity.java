@@ -1,42 +1,52 @@
-package com.example.secuxtag;
+package com.example.secxtag;
 
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import java.util.concurrent.Executor;
 
-public class MainActivity extends AppCompatActivity {
+public class AuthActivity extends AppCompatActivity {
 
-    EditText inputText;
-    TextView outputText;
-    Button encryptBtn;
-
-    String secretKey = "12345678901234567890123456789012"; // 32-char AES-256 key
+    FirebaseAuth mAuth;
+    Executor executor;
+    BiometricPrompt biometricPrompt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_auth);
 
-        inputText = findViewById(R.id.inputText);
-        outputText = findViewById(R.id.outputText);
-        encryptBtn = findViewById(R.id.encryptBtn);
+        mAuth = FirebaseAuth.getInstance();
 
-        encryptBtn.setOnClickListener(v -> {
-            try {
-                String userInput = inputText.getText().toString().trim();
-                if (userInput.isEmpty()) {
-                    outputText.setText("Please enter text to encrypt.");
-                    return;
+        executor = ContextCompat.getMainExecutor(this);
+        biometricPrompt = new BiometricPrompt(this, executor,
+            new BiometricPrompt.AuthenticationCallback() {
+                @Override
+                public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                    super.onAuthenticationSucceeded(result);
+                    checkUser();
                 }
+            });
 
-                String encrypted = AESUtil.encrypt(userInput, secretKey);
-                String decrypted = AESUtil.decrypt(encrypted, secretKey);
-                outputText.setText("Encrypted: " + encrypted + "\n\nDecrypted: " + decrypted);
-            } catch (Exception e) {
-                outputText.setText("Error: " + e.getMessage());
-            }
-        });
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Secure Login")
+                .setSubtitle("Authenticate using fingerprint/face")
+                .setDeviceCredentialAllowed(true)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    private void checkUser() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            // Move to Dashboard
+            startActivity(new android.content.Intent(this, DashboardActivity.class));
+            finish();
+        }
     }
 }
